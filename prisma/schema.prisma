@@ -1,0 +1,222 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// 用户与家庭
+// ============================================================
+
+model User {
+  id        String   @id @default(uuid())
+  phone     String   @unique
+  password  String
+  nickname  String
+  avatar    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关联
+  familyId        String?          @map("family_id")
+  family          Family?          @relation(fields: [familyId], references: [id])
+  memories        Memory[]
+  parallelViews   ParallelView[]
+  resonances      Resonance[]
+  sentLetters     Letter[]         @relation("SentLetters")
+  receivedLetters Letter[]         @relation("ReceivedLetters")
+  questionAnswers QuestionAnswer[]
+
+  @@map("users")
+}
+
+model Family {
+  id              String   @id @default(uuid())
+  name            String
+  slogan          String?
+  coverImage      String?  @map("cover_image")
+  inviteCode      String   @unique @map("invite_code")
+  establishedYear Int      @map("established_year")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // 关联
+  members   User[]
+  memories  Memory[]
+  photos    Photo[]
+  letters   Letter[]
+  questions Question[]
+
+  @@map("families")
+}
+
+// ============================================================
+// 时光轴 - 记忆系统
+// ============================================================
+
+model Memory {
+  id        String     @id @default(uuid())
+  type      MemoryType @default(TEXT)
+  content   String
+  tags      String[]   @default([])
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  // 语音相关
+  voiceDuration Int? @map("voice_duration")
+  voiceUrl      String? @map("voice_url")
+
+  // 关联
+  authorId      String         @map("author_id")
+  author        User           @relation(fields: [authorId], references: [id])
+  familyId      String         @map("family_id")
+  family        Family         @relation(fields: [familyId], references: [id])
+  images        MemoryImage[]
+  parallelViews ParallelView[]
+  resonances    Resonance[]
+
+  @@index([familyId, createdAt(sort: Desc)])
+  @@map("memories")
+}
+
+enum MemoryType {
+  TEXT
+  PHOTO
+  VOICE
+}
+
+model MemoryImage {
+  id       String @id @default(uuid())
+  url      String
+  sort     Int    @default(0)
+  memoryId String @map("memory_id")
+  memory   Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+
+  @@map("memory_images")
+}
+
+// 平行视角：同一件事不同人的记录
+model ParallelView {
+  id        String   @id @default(uuid())
+  content   String
+  images    String[] @default([])
+  tags      String[] @default([])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 关联
+  memoryId String @map("memory_id")
+  memory   Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  authorId String @map("author_id")
+  author   User   @relation(fields: [authorId], references: [id])
+
+  resonances Resonance[]
+
+  @@unique([memoryId, authorId])
+  @@map("parallel_views")
+}
+
+// 共鸣
+model Resonance {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userId         String        @map("user_id")
+  user           User          @relation(fields: [userId], references: [id])
+  memoryId       String?       @map("memory_id")
+  memory         Memory?       @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  parallelViewId String?       @map("parallel_view_id")
+  parallelView   ParallelView? @relation(fields: [parallelViewId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, memoryId])
+  @@unique([userId, parallelViewId])
+  @@map("resonances")
+}
+
+// ============================================================
+// 相册馆
+// ============================================================
+
+model Photo {
+  id        String   @id @default(uuid())
+  url       String
+  content   String?
+  aiTags    String[] @default([]) @map("ai_tags")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 关联到记忆（照片可以从记忆中自动提取）
+  memoryId String? @map("memory_id")
+
+  familyId String @map("family_id")
+  family   Family @relation(fields: [familyId], references: [id])
+
+  @@index([familyId, createdAt(sort: Desc)])
+  @@map("photos")
+}
+
+// ============================================================
+// 慢递信箱
+// ============================================================
+
+model Letter {
+  id         String       @id @default(uuid())
+  content    String
+  status     LetterStatus @default(SEALED)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  unlockTime DateTime     @map("unlock_time")
+  openedAt   DateTime?    @map("opened_at")
+
+  // 关联
+  senderId   String @map("sender_id")
+  sender     User   @relation("SentLetters", fields: [senderId], references: [id])
+  receiverId String @map("receiver_id")
+  receiver   User   @relation("ReceivedLetters", fields: [receiverId], references: [id])
+  familyId   String @map("family_id")
+  family     Family @relation(fields: [familyId], references: [id])
+
+  @@index([receiverId, unlockTime])
+  @@map("letters")
+}
+
+enum LetterStatus {
+  SEALED
+  UNLOCKABLE
+  OPENED
+}
+
+// ============================================================
+// 默契问答
+// ============================================================
+
+model Question {
+  id         String   @id @default(uuid())
+  content    String
+  activeDate DateTime @map("active_date")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  familyId String           @map("family_id")
+  family   Family           @relation(fields: [familyId], references: [id])
+  answers  QuestionAnswer[]
+
+  @@unique([familyId, activeDate])
+  @@map("questions")
+}
+
+model QuestionAnswer {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  questionId String   @map("question_id")
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@unique([questionId, userId])
+  @@map("question_answers")
+}
