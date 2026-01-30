@@ -32,6 +32,7 @@ model User {
   sentLetters     Letter[]         @relation("SentLetters")
   receivedLetters Letter[]         @relation("ReceivedLetters")
   questionAnswers QuestionAnswer[]
+  tags            Tag[]
 
   @@map("users")
 }
@@ -207,4 +208,20 @@ model QuestionAnswer {
 
   @@unique([questionId, userId])
   @@map("question_answers")
+}
+
+// ============================================================
+// 标签
+// ============================================================
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, name])
+  @@map("tags")
 }

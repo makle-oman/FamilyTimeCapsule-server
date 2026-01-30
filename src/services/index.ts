@@ -4,3 +4,4 @@ export * from './memory.service';
 export * from './photo.service';
 export * from './letter.service';
 export * from './question.service';
+export * from './tag.service';

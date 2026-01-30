@@ -41,19 +41,18 @@ export const getPhotoById = asyncHandler(async (req: Request, res: Response) => 
 });
 
 /**
- * 获取所有标签
+ * 获取所有标签（从有图片的记忆中提取）
  */
 export const getTags = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
 
-  // 获取用户的家庭ID
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user?.familyId) {
-    throw new AppError('请先加入一个家庭', 400);
+    ResponseHelper.success(res, []);
+    return;
   }
 
-  const tags = await photoService.getTags(user.familyId);
-
+  const tags = await photoService.getPhotoTags(user.familyId);
   ResponseHelper.success(res, tags);
 });
 

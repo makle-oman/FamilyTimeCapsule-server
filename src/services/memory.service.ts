@@ -231,19 +231,24 @@ class MemoryService {
   }
 
   /**
-   * 添加共鸣
+   * 添加共鸣（同一用户可对不同记忆共鸣，对同一条记忆重复点击则取消共鸣）
    */
   async addResonance(userId: string, memoryId: string, parallelViewId?: string) {
-    // 检查是否已经共鸣过
+    // 精确匹配：检查用户是否已对这条具体的 memory 或 parallelView 共鸣过
+    const whereCondition = parallelViewId
+      ? { userId, parallelViewId }
+      : { userId, memoryId, parallelViewId: null };
+
     const existingResonance = await prisma.resonance.findFirst({
-      where: {
-        userId,
-        OR: [{ memoryId }, { parallelViewId }],
-      },
+      where: whereCondition,
     });
 
     if (existingResonance) {
-      throw new AppError('您已经共鸣过了', 400);
+      // 已共鸣则取消（toggle 效果）
+      await prisma.resonance.delete({
+        where: { id: existingResonance.id },
+      });
+      return { success: true, action: 'removed' };
     }
 
     await prisma.resonance.create({
@@ -254,7 +259,7 @@ class MemoryService {
       },
     });
 
-    return { success: true };
+    return { success: true, action: 'added' };
   }
 
   /**
