@@ -1,11 +1,10 @@
-import { MemoryType } from '@prisma/client';
 import { prisma } from '../config/database';
 import { AppError } from '../middlewares/error.middleware';
 import { getYearAgoToday, isSameDay } from '../utils/helpers';
 import { PaginationParams } from '../types';
 
 export interface CreateMemoryInput {
-  type: MemoryType;
+  type: string;
   content: string;
   tags?: string[];
   images?: string[];
@@ -32,7 +31,7 @@ class MemoryService {
       data: {
         type,
         content,
-        tags,
+        tags: JSON.stringify(tags),
         voiceDuration,
         voiceUrl,
         authorId: userId,
@@ -211,8 +210,8 @@ class MemoryService {
     const parallelView = await prisma.parallelView.create({
       data: {
         content,
-        images,
-        tags,
+        images: JSON.stringify(images),
+        tags: JSON.stringify(tags),
         memoryId,
         authorId: userId,
       },
@@ -224,7 +223,11 @@ class MemoryService {
       },
     });
 
-    return parallelView;
+    return {
+      ...parallelView,
+      images: JSON.parse(parallelView.images),
+      tags: JSON.parse(parallelView.tags),
+    };
   }
 
   /**
@@ -289,11 +292,14 @@ class MemoryService {
     const yearAgo = getYearAgoToday();
     const isOldMemory = isSameDay(new Date(memory.createdAt), yearAgo);
 
+    // 解析 JSON 字符串
+    const tags = typeof memory.tags === 'string' ? JSON.parse(memory.tags) : memory.tags;
+
     return {
       id: memory.id,
       type: memory.type,
       content: memory.content,
-      tags: memory.tags,
+      tags,
       voiceDuration: memory.voiceDuration,
       voiceUrl: memory.voiceUrl,
       createdAt: memory.createdAt,
@@ -304,8 +310,8 @@ class MemoryService {
       parallelViews: memory.parallelViews?.map((view: any) => ({
         id: view.id,
         content: view.content,
-        images: view.images,
-        tags: view.tags,
+        images: typeof view.images === 'string' ? JSON.parse(view.images) : view.images,
+        tags: typeof view.tags === 'string' ? JSON.parse(view.tags) : view.tags,
         createdAt: view.createdAt,
         author: view.author,
         resonanceCount: view._count?.resonances || 0,

@@ -1,4 +1,3 @@
-import { LetterStatus } from '@prisma/client';
 import { prisma } from '../config/database';
 import { AppError } from '../middlewares/error.middleware';
 import { PaginationParams } from '../types';

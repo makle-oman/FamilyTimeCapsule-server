@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -61,15 +61,15 @@ model Family {
 // ============================================================
 
 model Memory {
-  id        String     @id @default(uuid())
-  type      MemoryType @default(TEXT)
+  id        String   @id @default(uuid())
+  type      String   @default("TEXT")
   content   String
-  tags      String[]   @default([])
-  createdAt DateTime   @default(now()) @map("created_at")
-  updatedAt DateTime   @updatedAt @map("updated_at")
+  tags      String   @default("[]")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // 语音相关
-  voiceDuration Int? @map("voice_duration")
+  voiceDuration Int?    @map("voice_duration")
   voiceUrl      String? @map("voice_url")
 
   // 关联
@@ -83,12 +83,6 @@ model Memory {
 
   @@index([familyId, createdAt(sort: Desc)])
   @@map("memories")
-}
-
-enum MemoryType {
-  TEXT
-  PHOTO
-  VOICE
 }
 
 model MemoryImage {
@@ -105,8 +99,8 @@ model MemoryImage {
 model ParallelView {
   id        String   @id @default(uuid())
   content   String
-  images    String[] @default([])
-  tags      String[] @default([])
+  images    String   @default("[]")
+  tags      String   @default("[]")
   createdAt DateTime @default(now()) @map("created_at")
 
   // 关联
@@ -146,7 +140,7 @@ model Photo {
   id        String   @id @default(uuid())
   url       String
   content   String?
-  aiTags    String[] @default([]) @map("ai_tags")
+  aiTags    String   @default("[]") @map("ai_tags")
   createdAt DateTime @default(now()) @map("created_at")
 
   // 关联到记忆（照片可以从记忆中自动提取）
@@ -164,12 +158,12 @@ model Photo {
 // ============================================================
 
 model Letter {
-  id         String       @id @default(uuid())
+  id         String   @id @default(uuid())
   content    String
-  status     LetterStatus @default(SEALED)
-  createdAt  DateTime     @default(now()) @map("created_at")
-  unlockTime DateTime     @map("unlock_time")
-  openedAt   DateTime?    @map("opened_at")
+  status     String   @default("SEALED")
+  createdAt  DateTime @default(now()) @map("created_at")
+  unlockTime DateTime @map("unlock_time")
+  openedAt   DateTime? @map("opened_at")
 
   // 关联
   senderId   String @map("sender_id")
@@ -181,12 +175,6 @@ model Letter {
 
   @@index([receiverId, unlockTime])
   @@map("letters")
-}
-
-enum LetterStatus {
-  SEALED
-  UNLOCKABLE
-  OPENED
 }
 
 // ============================================================

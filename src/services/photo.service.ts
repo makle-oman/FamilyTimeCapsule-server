@@ -10,9 +10,10 @@ class PhotoService {
     const { page = 1, limit = 20 } = pagination;
     const skip = (page - 1) * limit;
 
+    // SQLite 使用字符串存储 JSON，需要用 contains 查询
     const where: any = { familyId };
     if (tag) {
-      where.aiTags = { has: tag };
+      where.aiTags = { contains: tag };
     }
 
     const [photos, total] = await Promise.all([
@@ -25,8 +26,14 @@ class PhotoService {
       prisma.photo.count({ where }),
     ]);
 
+    // 解析 JSON 字符串
+    const formattedPhotos = photos.map((photo) => ({
+      ...photo,
+      aiTags: typeof photo.aiTags === 'string' ? JSON.parse(photo.aiTags) : photo.aiTags,
+    }));
+
     return {
-      items: photos,
+      items: formattedPhotos,
       total,
       page,
       limit,
@@ -46,7 +53,10 @@ class PhotoService {
       throw new AppError('照片不存在', 404);
     }
 
-    return photo;
+    return {
+      ...photo,
+      aiTags: typeof photo.aiTags === 'string' ? JSON.parse(photo.aiTags) : photo.aiTags,
+    };
   }
 
   /**
@@ -61,8 +71,11 @@ class PhotoService {
     // 收集所有标签并去重
     const tagSet = new Set<string>();
     for (const photo of photos) {
-      for (const tag of photo.aiTags) {
-        tagSet.add(tag);
+      const tags = typeof photo.aiTags === 'string' ? JSON.parse(photo.aiTags) : photo.aiTags;
+      if (Array.isArray(tags)) {
+        for (const tag of tags) {
+          tagSet.add(tag);
+        }
       }
     }
 
@@ -75,10 +88,13 @@ class PhotoService {
   async updatePhotoTags(photoId: string, tags: string[]) {
     const photo = await prisma.photo.update({
       where: { id: photoId },
-      data: { aiTags: tags },
+      data: { aiTags: JSON.stringify(tags) },
     });
 
-    return photo;
+    return {
+      ...photo,
+      aiTags: tags,
+    };
   }
 }
 

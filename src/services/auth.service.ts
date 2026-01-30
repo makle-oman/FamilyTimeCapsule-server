@@ -92,13 +92,13 @@ class AuthService {
     // 查找用户
     const user = await prisma.user.findUnique({ where: { phone } });
     if (!user) {
-      throw new AppError('手机号或密码错误', 401);
+      throw new AppError('手机号或密码错误', 500);
     }
 
     // 验证密码
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      throw new AppError('手机号或密码错误', 401);
+      throw new AppError('手机号或密码错误', 500);
     }
 
     // 生成 JWT
