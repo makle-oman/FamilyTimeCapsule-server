@@ -181,9 +181,9 @@ class LetterService {
   }
 
   /**
-   * 获取信件年份列表（用于书架展示）
+   * 获取信件年份列表（用于书架展示，含每年数量）
    */
-  async getLetterYears(userId: string): Promise<number[]> {
+  async getLetterYears(userId: string): Promise<{ year: number; count: number }[]> {
     const letters = await prisma.letter.findMany({
       where: {
         receiverId: userId,
@@ -193,14 +193,17 @@ class LetterService {
       select: { openedAt: true },
     });
 
-    const years = new Set<number>();
+    const yearCounts = new Map<number, number>();
     for (const letter of letters) {
       if (letter.openedAt) {
-        years.add(letter.openedAt.getFullYear());
+        const year = letter.openedAt.getFullYear();
+        yearCounts.set(year, (yearCounts.get(year) || 0) + 1);
       }
     }
 
-    return Array.from(years).sort((a, b) => b - a);
+    return Array.from(yearCounts.entries())
+      .map(([year, count]) => ({ year, count }))
+      .sort((a, b) => b.year - a.year);
   }
 }
 
