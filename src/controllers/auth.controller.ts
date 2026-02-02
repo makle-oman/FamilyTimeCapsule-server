@@ -40,3 +40,15 @@ export const getCurrentUser = asyncHandler(async (req: Request, res: Response) =
 
   ResponseHelper.success(res, user, '获取成功');
 });
+
+/**
+ * 更新用户资料
+ */
+export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const { nickname, avatar } = req.body;
+
+  const user = await authService.updateProfile(userId, { nickname, avatar });
+
+  ResponseHelper.success(res, user, '更新成功');
+});

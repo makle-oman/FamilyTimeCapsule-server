@@ -54,4 +54,22 @@ router.post(
  */
 router.post('/me', authMiddleware, authController.getCurrentUser);
 
+/**
+ * POST /api/auth/update-profile
+ * 更新用户资料
+ */
+router.post(
+  '/update-profile',
+  authMiddleware,
+  validate([
+    body('nickname')
+      .optional()
+      .trim()
+      .isLength({ max: 20 })
+      .withMessage('昵称最多20个字符'),
+    body('avatar').optional().trim(),
+  ]),
+  authController.updateProfile
+);
+
 export default router;
