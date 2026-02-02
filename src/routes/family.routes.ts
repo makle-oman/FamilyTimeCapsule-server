@@ -10,11 +10,11 @@ const router = Router();
 router.use(authMiddleware);
 
 /**
- * POST /api/families
+ * POST /api/families/create
  * 创建家庭
  */
 router.post(
-  '/',
+  '/create',
   validate([
     body('name')
       .trim()
@@ -46,23 +46,23 @@ router.post(
 );
 
 /**
- * GET /api/families/my
+ * POST /api/families/my
  * 获取我的家庭
  */
-router.get('/my', familyController.getMyFamily);
+router.post('/my', familyController.getMyFamily);
 
 /**
- * GET /api/families/:familyId
+ * POST /api/families/detail
  * 获取家庭详情
  */
-router.get('/:familyId', familyController.getFamilyById);
+router.post('/detail', familyController.getFamilyById);
 
 /**
- * PUT /api/families/:familyId
+ * POST /api/families/update
  * 更新家庭信息
  */
-router.put(
-  '/:familyId',
+router.post(
+  '/update',
   validate([
     body('name').optional().isLength({ max: 12 }).withMessage('家庭名称最多12个字符'),
     body('slogan').optional().isLength({ max: 50 }).withMessage('口号最多50个字符'),
@@ -71,15 +71,15 @@ router.put(
 );
 
 /**
- * GET /api/families/:familyId/members
+ * POST /api/families/members
  * 获取家庭成员
  */
-router.get('/:familyId/members', familyController.getFamilyMembers);
+router.post('/members', familyController.getFamilyMembers);
 
 /**
- * GET /api/families/:familyId/stats
+ * POST /api/families/stats
  * 获取家庭统计数据
  */
-router.get('/:familyId/stats', familyController.getFamilyStats);
+router.post('/stats', familyController.getFamilyStats);
 
 export default router;

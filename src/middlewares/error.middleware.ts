@@ -1,18 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 import { ResponseHelper } from '../utils/response';
+import { ResponseCode } from '../types';
 import { config } from '../config';
 
 /**
  * 自定义错误类
  */
 export class AppError extends Error {
-  public statusCode: number;
+  public code: number;
   public isOperational: boolean;
 
-  constructor(message: string, statusCode = 400) {
+  constructor(message: string, code = ResponseCode.BAD_REQUEST) {
     super(message);
-    this.statusCode = statusCode;
+    this.code = code;
     this.isOperational = true;
 
     Error.captureStackTrace(this, this.constructor);
@@ -31,17 +32,16 @@ export function errorHandler(
   logger.error(`[${req.method}] ${req.path} - ${err.message}`, {
     stack: err.stack,
     body: req.body,
-    query: req.query,
   });
 
   if (err instanceof AppError) {
-    ResponseHelper.error(res, err.message, err.statusCode);
+    ResponseHelper.error(res, err.message, err.code);
     return;
   }
 
   // 开发环境返回详细错误
   if (config.env === 'development') {
-    ResponseHelper.error(res, err.message || '服务器内部错误', 500);
+    ResponseHelper.error(res, err.message || '服务器内部错误', ResponseCode.SERVER_ERROR);
     return;
   }
 

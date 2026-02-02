@@ -3,6 +3,7 @@ import { questionService } from '../services';
 import { ResponseHelper } from '../utils/response';
 import { asyncHandler, AppError } from '../middlewares';
 import { prisma } from '../config/database';
+import { ResponseCode } from '../types';
 
 /**
  * 获取今日问题
@@ -13,7 +14,7 @@ export const getTodayQuestion = asyncHandler(async (req: Request, res: Response)
   // 获取用户的家庭ID
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user?.familyId) {
-    throw new AppError('请先加入一个家庭', 400);
+    throw new AppError('请先加入一个家庭', ResponseCode.BAD_REQUEST);
   }
 
   const question = await questionService.getTodayQuestion(user.familyId);
@@ -24,7 +25,7 @@ export const getTodayQuestion = asyncHandler(async (req: Request, res: Response)
   ResponseHelper.success(res, {
     ...question,
     hasAnswered,
-  });
+  }, '获取成功');
 });
 
 /**
@@ -47,19 +48,19 @@ export const answerQuestion = asyncHandler(async (req: Request, res: Response) =
  */
 export const getQuestionHistory = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
-  const { page, limit } = req.query;
+  const { page, limit } = req.body;
 
   // 获取用户的家庭ID
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user?.familyId) {
-    throw new AppError('请先加入一个家庭', 400);
+    throw new AppError('请先加入一个家庭', ResponseCode.BAD_REQUEST);
   }
 
   const result = await questionService.getQuestionHistory(
     user.familyId,
-    page ? parseInt(page as string, 10) : undefined,
-    limit ? parseInt(limit as string, 10) : undefined
+    page ? parseInt(page, 10) : undefined,
+    limit ? parseInt(limit, 10) : undefined
   );
 
-  ResponseHelper.success(res, result);
+  ResponseHelper.success(res, result, '获取成功');
 });

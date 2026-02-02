@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { familyService } from '../services';
 import { ResponseHelper } from '../utils/response';
-import { asyncHandler } from '../middlewares';
+import { asyncHandler, AppError } from '../middlewares';
+import { ResponseCode } from '../types';
 
 /**
  * 创建家庭
@@ -39,18 +40,22 @@ export const getMyFamily = asyncHandler(async (req: Request, res: Response) => {
 
   const family = await familyService.getUserFamily(userId);
 
-  ResponseHelper.success(res, family);
+  ResponseHelper.success(res, family, '获取成功');
 });
 
 /**
  * 获取家庭详情
  */
 export const getFamilyById = asyncHandler(async (req: Request, res: Response) => {
-  const familyId = req.params.familyId as string;
+  const { familyId } = req.body;
+
+  if (!familyId) {
+    throw new AppError('家庭ID不能为空', ResponseCode.BAD_REQUEST);
+  }
 
   const family = await familyService.getFamilyById(familyId);
 
-  ResponseHelper.success(res, family);
+  ResponseHelper.success(res, family, '获取成功');
 });
 
 /**
@@ -58,8 +63,11 @@ export const getFamilyById = asyncHandler(async (req: Request, res: Response) =>
  */
 export const updateFamily = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
-  const familyId = req.params.familyId as string;
-  const { name, slogan, coverImage } = req.body;
+  const { familyId, name, slogan, coverImage } = req.body;
+
+  if (!familyId) {
+    throw new AppError('家庭ID不能为空', ResponseCode.BAD_REQUEST);
+  }
 
   const family = await familyService.updateFamily(familyId, userId, {
     name,
@@ -74,20 +82,28 @@ export const updateFamily = asyncHandler(async (req: Request, res: Response) => 
  * 获取家庭成员
  */
 export const getFamilyMembers = asyncHandler(async (req: Request, res: Response) => {
-  const familyId = req.params.familyId as string;
+  const { familyId } = req.body;
+
+  if (!familyId) {
+    throw new AppError('家庭ID不能为空', ResponseCode.BAD_REQUEST);
+  }
 
   const members = await familyService.getFamilyMembers(familyId);
 
-  ResponseHelper.success(res, members);
+  ResponseHelper.success(res, members, '获取成功');
 });
 
 /**
  * 获取家庭统计数据
  */
 export const getFamilyStats = asyncHandler(async (req: Request, res: Response) => {
-  const familyId = req.params.familyId as string;
+  const { familyId } = req.body;
+
+  if (!familyId) {
+    throw new AppError('家庭ID不能为空', ResponseCode.BAD_REQUEST);
+  }
 
   const stats = await familyService.getFamilyStats(familyId);
 
-  ResponseHelper.success(res, stats);
+  ResponseHelper.success(res, stats, '获取成功');
 });

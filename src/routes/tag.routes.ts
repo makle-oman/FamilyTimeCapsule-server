@@ -10,17 +10,17 @@ const router = Router();
 router.use(authMiddleware);
 
 /**
- * GET /api/tags
+ * POST /api/tags/list
  * 获取用户标签列表
  */
-router.get('/', tagController.getUserTags);
+router.post('/list', tagController.getUserTags);
 
 /**
- * POST /api/tags
+ * POST /api/tags/create
  * 创建标签
  */
 router.post(
-  '/',
+  '/create',
   validate([
     body('name').trim().notEmpty().withMessage('标签名称不能为空').isLength({ max: 10 }).withMessage('标签名称最多10个字符'),
   ]),
@@ -28,9 +28,9 @@ router.post(
 );
 
 /**
- * DELETE /api/tags/:tagId
+ * POST /api/tags/delete
  * 删除标签
  */
-router.delete('/:tagId', tagController.deleteUserTag);
+router.post('/delete', tagController.deleteUserTag);
 
 export default router;

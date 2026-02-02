@@ -49,9 +49,9 @@ router.post(
 );
 
 /**
- * GET /api/auth/me
+ * POST /api/auth/me
  * 获取当前用户信息
  */
-router.get('/me', authMiddleware, authController.getCurrentUser);
+router.post('/me', authMiddleware, authController.getCurrentUser);
 
 export default router;

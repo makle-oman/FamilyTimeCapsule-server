@@ -38,5 +38,5 @@ export const getCurrentUser = asyncHandler(async (req: Request, res: Response) =
 
   const user = await authService.getCurrentUser(userId);
 
-  ResponseHelper.success(res, user);
+  ResponseHelper.success(res, user, '获取成功');
 });

@@ -10,30 +10,33 @@ const router = Router();
 router.use(authMiddleware);
 
 /**
- * GET /api/photos
+ * POST /api/photos/list
  * 获取家庭相册
  */
-router.get('/', photoController.getPhotos);
+router.post('/list', photoController.getPhotos);
 
 /**
- * GET /api/photos/tags
+ * POST /api/photos/tags
  * 获取所有标签
  */
-router.get('/tags', photoController.getTags);
+router.post('/tags', photoController.getTags);
 
 /**
- * GET /api/photos/:photoId
+ * POST /api/photos/detail
  * 获取单张照片
  */
-router.get('/:photoId', photoController.getPhotoById);
+router.post('/detail', photoController.getPhotoById);
 
 /**
- * PUT /api/photos/:photoId/tags
+ * POST /api/photos/update-tags
  * 更新照片标签
  */
-router.put(
-  '/:photoId/tags',
-  validate([body('tags').isArray().withMessage('标签必须是数组')]),
+router.post(
+  '/update-tags',
+  validate([
+    body('photoId').notEmpty().withMessage('照片ID不能为空'),
+    body('tags').isArray().withMessage('标签必须是数组'),
+  ]),
   photoController.updatePhotoTags
 );
 

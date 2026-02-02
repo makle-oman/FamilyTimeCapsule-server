@@ -3,6 +3,7 @@ import { memoryService } from '../services';
 import { ResponseHelper } from '../utils/response';
 import { asyncHandler, AppError } from '../middlewares';
 import { prisma } from '../config/database';
+import { ResponseCode } from '../types';
 
 /**
  * 创建记忆
@@ -14,7 +15,7 @@ export const createMemory = asyncHandler(async (req: Request, res: Response) => 
   // 获取用户的家庭ID
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user?.familyId) {
-    throw new AppError('请先加入一个家庭', 400);
+    throw new AppError('请先加入一个家庭', ResponseCode.BAD_REQUEST);
   }
 
   const memory = await memoryService.createMemory(userId, user.familyId, {
@@ -34,13 +35,12 @@ export const createMemory = asyncHandler(async (req: Request, res: Response) => 
  */
 export const getMemories = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
-  const page = req.query.page as string | undefined;
-  const limit = req.query.limit as string | undefined;
+  const { page, limit } = req.body;
 
   // 获取用户的家庭ID
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user?.familyId) {
-    throw new AppError('请先加入一个家庭', 400);
+    throw new AppError('请先加入一个家庭', ResponseCode.BAD_REQUEST);
   }
 
   const result = await memoryService.getMemories(user.familyId, {
@@ -48,18 +48,22 @@ export const getMemories = asyncHandler(async (req: Request, res: Response) => {
     limit: limit ? parseInt(limit, 10) : undefined,
   });
 
-  ResponseHelper.success(res, result);
+  ResponseHelper.success(res, result, '获取成功');
 });
 
 /**
  * 获取单个记忆详情
  */
 export const getMemoryById = asyncHandler(async (req: Request, res: Response) => {
-  const memoryId = req.params.memoryId as string;
+  const { memoryId } = req.body;
+
+  if (!memoryId) {
+    throw new AppError('记忆ID不能为空', ResponseCode.BAD_REQUEST);
+  }
 
   const memory = await memoryService.getMemoryById(memoryId);
 
-  ResponseHelper.success(res, memory);
+  ResponseHelper.success(res, memory, '获取成功');
 });
 
 /**
@@ -71,13 +75,13 @@ export const getYearAgoMemories = asyncHandler(async (req: Request, res: Respons
   // 获取用户的家庭ID
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user?.familyId) {
-    ResponseHelper.success(res, []);
+    ResponseHelper.success(res, [], '获取成功');
     return;
   }
 
   const memories = await memoryService.getYearAgoMemories(user.familyId);
 
-  ResponseHelper.success(res, memories);
+  ResponseHelper.success(res, memories, '获取成功');
 });
 
 /**
@@ -85,8 +89,7 @@ export const getYearAgoMemories = asyncHandler(async (req: Request, res: Respons
  */
 export const addParallelView = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
-  const memoryId = req.params.memoryId as string;
-  const { content, images, tags } = req.body;
+  const { memoryId, content, images, tags } = req.body;
 
   const parallelView = await memoryService.addParallelView(userId, {
     memoryId,
@@ -99,27 +102,29 @@ export const addParallelView = asyncHandler(async (req: Request, res: Response) 
 });
 
 /**
- * 添加共鸣
+ * 添加/取消共鸣 (toggle)
  */
 export const addResonance = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
-  const memoryId = req.params.memoryId as string;
-  const { parallelViewId } = req.body;
+  const { memoryId, parallelViewId } = req.body;
 
-  await memoryService.addResonance(userId, memoryId, parallelViewId);
+  if (!memoryId) {
+    throw new AppError('记忆ID不能为空', ResponseCode.BAD_REQUEST);
+  }
 
-  ResponseHelper.success(res, { success: true }, '已共鸣');
+  const result = await memoryService.addResonance(userId, memoryId, parallelViewId);
+
+  ResponseHelper.success(res, result, result.action === 'added' ? '已共鸣' : '已取消共鸣');
 });
 
 /**
- * 取消共鸣
+ * 取消共鸣 (保留兼容)
  */
 export const removeResonance = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
-  const memoryId = req.params.memoryId as string;
-  const { parallelViewId } = req.body;
+  const { memoryId, parallelViewId } = req.body;
 
   await memoryService.removeResonance(userId, memoryId, parallelViewId);
 
-  ResponseHelper.success(res, { success: true }, '已取消共鸣');
+  ResponseHelper.success(res, null, '已取消共鸣');
 });

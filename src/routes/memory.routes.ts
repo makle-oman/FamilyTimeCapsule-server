@@ -10,11 +10,11 @@ const router = Router();
 router.use(authMiddleware);
 
 /**
- * POST /api/memories
+ * POST /api/memories/create
  * 创建记忆
  */
 router.post(
-  '/',
+  '/create',
   validate([
     body('type').isIn(['TEXT', 'PHOTO', 'VOICE']).withMessage('类型必须是 TEXT、PHOTO 或 VOICE'),
     body('content').trim().notEmpty().withMessage('内容不能为空'),
@@ -27,30 +27,31 @@ router.post(
 );
 
 /**
- * GET /api/memories
+ * POST /api/memories/list
  * 获取时光轴记忆列表
  */
-router.get('/', memoryController.getMemories);
+router.post('/list', memoryController.getMemories);
 
 /**
- * GET /api/memories/year-ago
+ * POST /api/memories/year-ago
  * 获取一年前今天的记忆
  */
-router.get('/year-ago', memoryController.getYearAgoMemories);
+router.post('/year-ago', memoryController.getYearAgoMemories);
 
 /**
- * GET /api/memories/:memoryId
+ * POST /api/memories/detail
  * 获取单个记忆详情
  */
-router.get('/:memoryId', memoryController.getMemoryById);
+router.post('/detail', memoryController.getMemoryById);
 
 /**
- * POST /api/memories/:memoryId/parallel-views
+ * POST /api/memories/parallel-view
  * 添加平行视角
  */
 router.post(
-  '/:memoryId/parallel-views',
+  '/parallel-view',
   validate([
+    body('memoryId').notEmpty().withMessage('记忆ID不能为空'),
     body('content').trim().notEmpty().withMessage('内容不能为空'),
     body('images').optional().isArray().withMessage('图片必须是数组'),
     body('tags').optional().isArray().withMessage('标签必须是数组'),
@@ -59,15 +60,9 @@ router.post(
 );
 
 /**
- * POST /api/memories/:memoryId/resonance
- * 添加共鸣
+ * POST /api/memories/resonance
+ * 添加/取消共鸣 (toggle)
  */
-router.post('/:memoryId/resonance', memoryController.addResonance);
-
-/**
- * DELETE /api/memories/:memoryId/resonance
- * 取消共鸣
- */
-router.delete('/:memoryId/resonance', memoryController.removeResonance);
+router.post('/resonance', memoryController.addResonance);
 
 export default router;

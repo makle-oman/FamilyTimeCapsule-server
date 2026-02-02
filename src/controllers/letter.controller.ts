@@ -3,6 +3,7 @@ import { letterService } from '../services';
 import { ResponseHelper } from '../utils/response';
 import { asyncHandler, AppError } from '../middlewares';
 import { prisma } from '../config/database';
+import { ResponseCode } from '../types';
 
 /**
  * 创建信件
@@ -14,7 +15,7 @@ export const createLetter = asyncHandler(async (req: Request, res: Response) => 
   // 获取用户的家庭ID
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user?.familyId) {
-    throw new AppError('请先加入一个家庭', 400);
+    throw new AppError('请先加入一个家庭', ResponseCode.BAD_REQUEST);
   }
 
   const letter = await letterService.createLetter(userId, user.familyId, {
@@ -34,7 +35,7 @@ export const getPendingLetters = asyncHandler(async (req: Request, res: Response
 
   const letters = await letterService.getPendingLetters(userId);
 
-  ResponseHelper.success(res, letters);
+  ResponseHelper.success(res, letters, '获取成功');
 });
 
 /**
@@ -42,7 +43,11 @@ export const getPendingLetters = asyncHandler(async (req: Request, res: Response
  */
 export const openLetter = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
-  const letterId = req.params.letterId as string;
+  const { letterId } = req.body;
+
+  if (!letterId) {
+    throw new AppError('信件ID不能为空', ResponseCode.BAD_REQUEST);
+  }
 
   const letter = await letterService.openLetter(userId, letterId);
 
@@ -54,14 +59,14 @@ export const openLetter = asyncHandler(async (req: Request, res: Response) => {
  */
 export const getSentLetters = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
-  const { page, limit } = req.query;
+  const { page, limit } = req.body;
 
   const result = await letterService.getSentLetters(userId, {
-    page: page ? parseInt(page as string, 10) : undefined,
-    limit: limit ? parseInt(limit as string, 10) : undefined,
+    page: page ? parseInt(page, 10) : undefined,
+    limit: limit ? parseInt(limit, 10) : undefined,
   });
 
-  ResponseHelper.success(res, result);
+  ResponseHelper.success(res, result, '获取成功');
 });
 
 /**
@@ -69,14 +74,14 @@ export const getSentLetters = asyncHandler(async (req: Request, res: Response) =
  */
 export const getOpenedLetters = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
-  const { year } = req.query;
+  const { year } = req.body;
 
   const letters = await letterService.getOpenedLetters(
     userId,
-    year ? parseInt(year as string, 10) : undefined
+    year ? parseInt(year, 10) : undefined
   );
 
-  ResponseHelper.success(res, letters);
+  ResponseHelper.success(res, letters, '获取成功');
 });
 
 /**
@@ -87,5 +92,5 @@ export const getLetterYears = asyncHandler(async (req: Request, res: Response) =
 
   const years = await letterService.getLetterYears(userId);
 
-  ResponseHelper.success(res, years);
+  ResponseHelper.success(res, years, '获取成功');
 });

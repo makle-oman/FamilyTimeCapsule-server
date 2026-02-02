@@ -10,10 +10,10 @@ const router = Router();
 router.use(authMiddleware);
 
 /**
- * GET /api/questions/today
+ * POST /api/questions/today
  * 获取今日问题
  */
-router.get('/today', questionController.getTodayQuestion);
+router.post('/today', questionController.getTodayQuestion);
 
 /**
  * POST /api/questions/answer
@@ -29,9 +29,9 @@ router.post(
 );
 
 /**
- * GET /api/questions/history
+ * POST /api/questions/history
  * 获取问答历史
  */
-router.get('/history', questionController.getQuestionHistory);
+router.post('/history', questionController.getQuestionHistory);
 
 export default router;

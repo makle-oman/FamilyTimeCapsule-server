@@ -1,20 +1,21 @@
 import { Request, Response } from 'express';
 import { tagService } from '../services/tag.service';
 import { ResponseHelper } from '../utils/response';
-import { asyncHandler } from '../middlewares';
+import { asyncHandler, AppError } from '../middlewares';
+import { ResponseCode } from '../types';
 
 /**
- * GET /api/tags
+ * POST /api/tags/list
  * 获取用户标签列表
  */
 export const getUserTags = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const tags = await tagService.getTags(userId);
-  ResponseHelper.success(res, tags);
+  ResponseHelper.success(res, tags, '获取成功');
 });
 
 /**
- * POST /api/tags
+ * POST /api/tags/create
  * 创建标签
  */
 export const createUserTag = asyncHandler(async (req: Request, res: Response) => {
@@ -25,12 +26,17 @@ export const createUserTag = asyncHandler(async (req: Request, res: Response) =>
 });
 
 /**
- * DELETE /api/tags/:tagId
+ * POST /api/tags/delete
  * 删除标签
  */
 export const deleteUserTag = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.userId;
-  const { tagId } = req.params;
+  const { tagId } = req.body;
+
+  if (!tagId) {
+    throw new AppError('标签ID不能为空', ResponseCode.BAD_REQUEST);
+  }
+
   await tagService.deleteTag(userId, tagId);
   ResponseHelper.success(res, null, '删除成功');
 });
