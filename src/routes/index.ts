@@ -6,6 +6,7 @@ import photoRoutes from './photo.routes';
 import letterRoutes from './letter.routes';
 import questionRoutes from './question.routes';
 import tagRoutes from './tag.routes';
+import adminRoutes from './admin.routes';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/photos', photoRoutes);
 router.use('/letters', letterRoutes);
 router.use('/questions', questionRoutes);
 router.use('/tags', tagRoutes);
+router.use('/admin', adminRoutes);
 
 export default router;
