@@ -1,10 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+import { createServer } from 'http';
 import { config, validateConfig } from './config';
 import Database from './config/database';
 import routes from './routes';
 import { errorHandler, notFoundHandler } from './middlewares';
 import { logger } from './utils/logger';
+import { initSocket } from './utils/socket';
 
 // 验证配置
 validateConfig();
@@ -56,8 +58,14 @@ async function bootstrap() {
     await Database.connect();
     logger.info('数据库连接成功');
 
+    // 创建 HTTP Server
+    const httpServer = createServer(app);
+
+    // 初始化 Socket.IO
+    initSocket(httpServer);
+
     // 启动HTTP服务
-    app.listen(config.port, () => {
+    httpServer.listen(config.port, () => {
       logger.info(`服务启动成功: http://localhost:${config.port}`);
       logger.info(`环境: ${config.env}`);
     });

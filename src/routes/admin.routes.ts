@@ -18,6 +18,7 @@ router.get('/users', adminController.getUsers);
 
 // 家庭管理
 router.get('/families', adminController.getFamilies);
+router.get('/families/all', adminController.getAllFamilies);
 
 // 记忆管理
 router.get('/memories', adminController.getMemories);
@@ -28,5 +29,11 @@ router.get('/photos', adminController.getPhotos);
 
 // 信件管理
 router.get('/letters', adminController.getLetters);
+
+// 问答管理
+router.get('/questions', adminController.getQuestions);
+router.post('/questions', adminController.createQuestion);
+router.put('/questions/:id', adminController.updateQuestion);
+router.delete('/questions/:id', adminController.deleteQuestion);
 
 export default router;

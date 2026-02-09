@@ -1,6 +1,7 @@
 import { prisma } from '../config/database';
 import { AppError } from '../middlewares/error.middleware';
 import { getYearAgoToday, isSameDay } from '../utils/helpers';
+import { emitAdminNotification } from '../utils/socket';
 import { PaginationParams } from '../types';
 
 export interface CreateMemoryInput {
@@ -63,6 +64,18 @@ class MemoryService {
         })),
       });
     }
+
+    // 推送通知到管理后台
+    const family = await prisma.family.findUnique({ where: { id: familyId } });
+    emitAdminNotification('memory:created', {
+      type: 'memory',
+      id: memory.id,
+      title: `${memory.author.nickname} 创建了新回忆`,
+      description: content.length > 50 ? content.slice(0, 50) + '...' : content,
+      familyName: family?.name || '未知家庭',
+      authorName: memory.author.nickname,
+      createdAt: memory.createdAt.toISOString(),
+    });
 
     return this.formatMemory(memory);
   }

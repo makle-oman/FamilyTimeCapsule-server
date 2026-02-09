@@ -137,3 +137,62 @@ export const getLetters = asyncHandler(async (req: Request, res: Response) => {
   );
   ResponseHelper.success(res, result);
 });
+
+// ============================================================
+// 问答管理
+// ============================================================
+
+/**
+ * 获取问答列表
+ */
+export const getQuestions = asyncHandler(async (req: Request, res: Response) => {
+  const { page = 1, limit = 10, keyword } = req.query;
+  const result = await adminService.getQuestions(
+    { page: Number(page), limit: Number(limit) },
+    keyword as string
+  );
+  ResponseHelper.success(res, result);
+});
+
+/**
+ * 创建问答
+ */
+export const createQuestion = asyncHandler(async (req: Request, res: Response) => {
+  const { content } = req.body;
+
+  if (!content) {
+    ResponseHelper.error(res, '请填写问题内容');
+    return;
+  }
+
+  const result = await adminService.createQuestion({ content });
+  ResponseHelper.success(res, result, '创建成功');
+});
+
+/**
+ * 更新问答
+ */
+export const updateQuestion = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { content } = req.body;
+
+  const result = await adminService.updateQuestion(id, { content });
+  ResponseHelper.success(res, result, '更新成功');
+});
+
+/**
+ * 删除问答
+ */
+export const deleteQuestion = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  await adminService.deleteQuestion(id);
+  ResponseHelper.success(res, null, '删除成功');
+});
+
+/**
+ * 获取所有家庭列表（用于下拉选择）
+ */
+export const getAllFamilies = asyncHandler(async (_req: Request, res: Response) => {
+  const result = await adminService.getAllFamilies();
+  ResponseHelper.success(res, result);
+});

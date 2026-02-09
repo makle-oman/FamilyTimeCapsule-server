@@ -1,5 +1,6 @@
 import { prisma } from '../config/database';
 import { AppError } from '../middlewares/error.middleware';
+import { emitAdminNotification } from '../utils/socket';
 import { PaginationParams } from '../types';
 
 export interface CreateLetterInput {
@@ -38,6 +39,18 @@ class LetterService {
         sender: { select: { id: true, nickname: true, avatar: true } },
         receiver: { select: { id: true, nickname: true, avatar: true } },
       },
+    });
+
+    // 推送通知到管理后台
+    const family = await prisma.family.findUnique({ where: { id: familyId } });
+    emitAdminNotification('letter:created', {
+      type: 'letter',
+      id: letter.id,
+      title: `${letter.sender.nickname} 写了一封新信件`,
+      description: `写给 ${letter.receiver.nickname}，${new Date(unlockTime).toLocaleDateString('zh-CN')} 可开启`,
+      familyName: family?.name || '未知家庭',
+      authorName: letter.sender.nickname,
+      createdAt: letter.createdAt.toISOString(),
     });
 
     return letter;

@@ -399,6 +399,174 @@ class AdminService {
       totalPages: Math.ceil(total / limit)
     };
   }
+
+  // ============================================================
+  // 问答管理
+  // ============================================================
+
+  /**
+   * 获取问题库列表（管理后台）
+   */
+  async getQuestions(pagination: PaginationParams, keyword?: string) {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
+
+    // 获取问题库（从 question.service.ts 导出的 questionPool）
+    const { questionPool } = await import('./question.service');
+
+    // 筛选
+    let filteredPool = [...questionPool];
+    if (keyword) {
+      filteredPool = filteredPool.filter(q => q.includes(keyword));
+    }
+
+    // 分页
+    const total = filteredPool.length;
+    const pagedPool = filteredPool.slice(skip, skip + limit);
+
+    // 查询每个问题被哪些家庭使用过
+    const usedQuestions = await prisma.question.findMany({
+      where: {
+        content: { in: pagedPool }
+      },
+      select: {
+        content: true,
+        family: {
+          select: { id: true, name: true }
+        },
+        activeDate: true,
+        _count: {
+          select: { answers: true }
+        }
+      }
+    });
+
+    // 构建问题使用情况映射
+    const usageMap = new Map<string, { families: { id: string; name: string; activeDate: Date }[]; totalAnswers: number }>();
+    for (const q of usedQuestions) {
+      if (!usageMap.has(q.content)) {
+        usageMap.set(q.content, { families: [], totalAnswers: 0 });
+      }
+      const usage = usageMap.get(q.content)!;
+      usage.families.push({
+        id: q.family.id,
+        name: q.family.name,
+        activeDate: q.activeDate
+      });
+      usage.totalAnswers += q._count.answers;
+    }
+
+    return {
+      items: pagedPool.map((content, index) => {
+        const usage = usageMap.get(content);
+        return {
+          id: `pool-${skip + index}`, // 虚拟ID
+          content,
+          usedByFamilies: usage?.families || [],
+          usedCount: usage?.families.length || 0,
+          totalAnswers: usage?.totalAnswers || 0
+        };
+      }),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
+  }
+
+  /**
+   * 添加问题到问题库（管理后台）
+   * 注意：这会添加到内存中的问题库，重启后会丢失
+   * 如果需要持久化，应该存到数据库的单独表中
+   */
+  async createQuestion(data: { content: string }) {
+    // 动态导入并添加到问题库
+    const questionService = await import('./question.service');
+
+    // 检查是否已存在
+    if (questionService.questionPool.includes(data.content)) {
+      throw new Error('该问题已存在于问题库中');
+    }
+
+    // 添加到问题库
+    questionService.questionPool.push(data.content);
+
+    return {
+      id: `pool-${questionService.questionPool.length - 1}`,
+      content: data.content,
+      usedByFamilies: [],
+      usedCount: 0,
+      totalAnswers: 0
+    };
+  }
+
+  /**
+   * 更新问题库中的问题（管理后台）
+   */
+  async updateQuestion(id: string, data: { content?: string }) {
+    if (!data.content) {
+      throw new Error('问题内容不能为空');
+    }
+
+    // 解析索引
+    const index = parseInt(id.replace('pool-', ''), 10);
+    const questionService = await import('./question.service');
+
+    if (index < 0 || index >= questionService.questionPool.length) {
+      throw new Error('问题不存在');
+    }
+
+    const oldContent = questionService.questionPool[index];
+
+    // 更新问题库
+    questionService.questionPool[index] = data.content;
+
+    // 同时更新数据库中已使用该问题的记录
+    await prisma.question.updateMany({
+      where: { content: oldContent },
+      data: { content: data.content }
+    });
+
+    return {
+      id,
+      content: data.content,
+      usedByFamilies: [],
+      usedCount: 0,
+      totalAnswers: 0
+    };
+  }
+
+  /**
+   * 从问题库删除问题（管理后台）
+   */
+  async deleteQuestion(id: string) {
+    // 解析索引
+    const index = parseInt(id.replace('pool-', ''), 10);
+    const questionService = await import('./question.service');
+
+    if (index < 0 || index >= questionService.questionPool.length) {
+      throw new Error('问题不存在');
+    }
+
+    // 从问题库移除
+    questionService.questionPool.splice(index, 1);
+
+    return { success: true };
+  }
+
+  /**
+   * 获取所有家庭列表（用于下拉选择）
+   */
+  async getAllFamilies() {
+    const families = await prisma.family.findMany({
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true
+      }
+    });
+    return families;
+  }
 }
 
 export const adminService = new AdminService();
